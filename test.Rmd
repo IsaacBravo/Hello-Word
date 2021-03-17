@@ -1,0 +1,140 @@
+---
+title: "Peer Review Three"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+
+library(tidyverse)
+library(plotly)
+library(shiny)
+library(miniUI)
+
+dat<-read_csv(url("https://www.dropbox.com/s/4ebgnkdhhxo5rac/cel_volden_wiseman%20_coursera.csv?raw=1"))
+
+dat$Party<-recode(dat$dem,`1`="Democrat",`0`="Republican")
+
+```
+Page 1 {data-orientation=columns}
+===================================== 
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r}
+dat %>% 
+  drop_na() %>% 
+  filter(year>1979) %>% 
+  group_by(year,Party) %>% 
+  summarise(passed=sum(all_pass)) %>%
+  ggplot(aes(x=year, y=passed, fill=Party)) + 
+  geom_area() +
+  ggtitle("The Number of Bills Passed Since 1980") +
+  labs(y = "All Bill Passed",
+       x = "Year") +
+  scale_fill_manual(values = c("blue","red"))
+```
+
+Page 2 {data-orientation=rows}
+===================================== 
+
+Column {data-height=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+test3 <- dat%>%
+  drop_na()%>%
+  filter(congress==110)
+
+p <- ggplot(test3,
+            aes(x=votepct, y=all_pass, label=thomas_name, color=Party))+
+            geom_smooth(method="loess")+
+            geom_point()+ 
+            labs(x = "Vote Pct.", y = "All Pass" , title = "Passage and Vote Pct., 110th Congress") +
+            scale_color_manual(values = c("blue", "red"))
+
+ggplotly(p)
+
+```
+
+### Chart C
+
+```{r}
+
+test2 <- dat%>%
+          drop_na()%>%
+          filter(congress==110)
+
+ggplotly(ggplot(test2,
+                aes(x=dwnom1, y=all_pass, label=thomas_name, color=Party))+
+           geom_smooth(method="loess")+
+           geom_point()+ 
+           labs(x = "DW Nominates", y = "All Pass" , title = "Passage and Ideology, 110th Congress") +
+           scale_color_manual(values = c("blue", "red")))
+
+```
+
+
+Page 3 {data-orientation=columns}
+===================================== 
+
+Column {data-weight=950}
+----------------------------------------------------------------
+  
+### Chart D
+
+
+```{r}
+          
+      test<-dat %>% 
+            group_by(st_name) %>% 
+            filter(congress==110) %>%
+            summarise(passed=sum(all_pass))
+      
+      test3 <- test[c(1,2,3,5,6,7,8,10,
+                11,12,14,15,16,17,18,19,20,
+                21,22,23,24,25,26,27,28,29,30,
+                31,32,33,34,35,36,37,38,39,40,
+                41,43,44,45,46,47,48,49,51,52,
+                53,54,55),]
+   
+ sidebarLayout(
+        sidebarPanel(
+            selectInput(
+              inputId = "State",
+              label = "State",
+              choices=sort(unique(test3$st_name)),
+              multiple=TRUE,
+              selected=sort(unique(test3$st_name)))),
+
+          mainPanel(
+         plotOutput(outputId = "State")))
+          
+miniContentPanel(renderPlot({
+     
+        ggplot(filter(test3, st_name %in% input$State),
+        aes(passed,st_name)) +
+          geom_col(fill = "#45C9D5") + 
+              labs(y = "State Name", x = "Total Bill Passed Per State" , title = "Total Bill Passed by State Delegations, 110th Congress")}), height=1000,
+  scrollable = TRUE)
+
+  
+     # test<-dat %>% 
+      #      group_by(st_name) %>% 
+       #     filter(congress==110) %>%
+        #    summarise(passed=sum(all_pass))
+            
+
+
+```
+
